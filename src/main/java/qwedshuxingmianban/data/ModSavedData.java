@@ -37,18 +37,9 @@ public class ModSavedData extends PersistentState {
 
     public static ModSavedData createFromNbt(NbtCompound nbt) {
         ModSavedData data = new ModSavedData();
-        NbtCompound realData = nbt;
 
-        // 如果存档数据以空字符串键存在，则取其下的 "data" 复合数据
-        if (nbt.contains("", NbtElement.COMPOUND_TYPE)) {
-            NbtCompound root = nbt.getCompound("");
-            if (root.contains("data", NbtElement.COMPOUND_TYPE)) {
-                realData = root.getCompound("data");
-            }
-        }
-
-        if (realData.contains("PlayerAttributes", NbtElement.COMPOUND_TYPE)) {
-            NbtCompound playersNbt = realData.getCompound("PlayerAttributes");
+        if (nbt.contains("PlayerAttributes", NbtElement.COMPOUND_TYPE)) {
+            NbtCompound playersNbt = nbt.getCompound("PlayerAttributes");
 
             for (String uuidStr : playersNbt.getKeys()) {
                 try {
