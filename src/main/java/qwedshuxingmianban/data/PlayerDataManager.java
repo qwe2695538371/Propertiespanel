@@ -14,30 +14,36 @@ public class PlayerDataManager {
     public static PlayerAttributeData getData(ServerPlayerEntity player) {
         UUID uuid = player.getUuid();
 
-        // 从持久化存档中读取数据
-        PlayerAttributeData data = new PlayerAttributeData();
-        ModSavedData savedData = ModSavedData.getOrCreate(player.getServerWorld());
-        Map<String, Integer> attributes = savedData.getPlayerData(uuid);
+        // 首先检查缓存中是否已有数据
+        PlayerAttributeData data = CACHE.get(uuid);
+        if (data == null) {
+            // 只在缓存中没有数据时创建新实例
+            data = new PlayerAttributeData();
+            ModSavedData savedData = ModSavedData.getOrCreate(player.getServerWorld());
+            Map<String, Integer> attributes = savedData.getPlayerData(uuid);
 
-        Qwedshuxingmianban.LOGGER.info("Loading data for player: " + uuid + ", attributes: " + attributes);
+            // 使用新增的 updateFromMap 方法更新数据
+            data.updateFromMap(attributes);
 
-        // 应用属性数据到 PlayerAttributeData，并同步属性（如最大生命值等）
-        for (Map.Entry<String, Integer> entry : attributes.entrySet()) {
-            data.setAttributeLevel(entry.getKey(), entry.getValue());
-            AttributeManager.applyAttributeModifier(player, entry.getKey(), entry.getValue());
-            Qwedshuxingmianban.LOGGER.info("Applied attribute: " + entry.getKey() + " with level: " + entry.getValue());
+            // 应用所有属性
+            for (Map.Entry<String, Integer> entry : attributes.entrySet()) {
+                AttributeManager.applyAttributeModifier(player, entry.getKey(), entry.getValue());
+            }
+
+            CACHE.put(uuid, data);
+            Qwedshuxingmianban.LOGGER.info("Loaded data for player: " + uuid + ", attributes: " + attributes);
         }
 
-        CACHE.put(uuid, data);
         return data;
     }
 
     public static void saveData(ServerPlayerEntity player) {
         UUID uuid = player.getUuid();
         PlayerAttributeData data = CACHE.get(uuid);
-        if (data != null) {
+        if (data != null && data.hasChanged()) {  // 只在数据发生变化时保存
             ModSavedData savedData = ModSavedData.getOrCreate(player.getServerWorld());
             savedData.setPlayerData(uuid, data.getAllLevels());
+            data.resetChanged();  // 重置变化标记
             Qwedshuxingmianban.LOGGER.info("Saved data for player: " + uuid + ", attributes: " + data.getAllLevels());
         }
     }
@@ -48,6 +54,6 @@ public class PlayerDataManager {
     }
 
     public static void onPlayerJoin(ServerPlayerEntity player) {
-        getData(player);
+        getData(player);  // 这会从存档加载数据并缓存
     }
 }

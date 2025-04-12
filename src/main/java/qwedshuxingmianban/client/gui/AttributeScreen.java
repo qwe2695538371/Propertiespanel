@@ -8,21 +8,24 @@ import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 import qwedshuxingmianban.Qwedshuxingmianban;
 import qwedshuxingmianban.attribute.AttributeManager;
 import qwedshuxingmianban.client.ClientAttributeData;
 import qwedshuxingmianban.config.ModConfig;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.minecraft.util.Formatting;
+
 import java.util.Map;
 import java.util.HashMap;
 import qwedshuxingmianban.network.NetworkHandler;
 
 public class AttributeScreen extends Screen {
-    private static final Identifier TEXTURE = new Identifier(Qwedshuxingmianban.MOD_ID, "textures/gui/attribute_panel.png");
-    private static final int TEXTURE_WIDTH = 256; // 增加宽度以容纳更多信息
-    private static final int TEXTURE_HEIGHT = 200; // 增加高度以避免重叠
+    // 添加滚动相关变量
+    private float scrollPosition = 0; // 当前滚动位置
+    private boolean isDragging = false; // 是否正在拖动
+    private int maxScroll; // 最大滚动距离
+    private static final int ITEM_HEIGHT = 30; // 每个属性项的高度
+    private static final int SCROLLBAR_WIDTH = 6; // 滚动条宽度
+    private static final int VISIBLE_ITEMS = 5; // 可见属性数量
     private int guiLeft;
     private int guiTop;
     private final Map<String, ButtonWidget> upgradeButtons = new HashMap<>();
@@ -31,6 +34,10 @@ public class AttributeScreen extends Screen {
     private static final int MAX_RETRIES = 3;
     private long lastSyncRequest = 0;
     private static final long RETRY_DELAY = 1000; // 1秒重试延迟
+    // 设置更大的界面尺寸，但保持原书本的宽高比
+    private static final int GUI_WIDTH = 256; 
+    private static final int GUI_HEIGHT = 256;
+
 
     public AttributeScreen() {
         super(Text.translatable("screen.qwedshuxingmianban.attribute_panel"));
@@ -39,37 +46,72 @@ public class AttributeScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        // 发送同步请求
         requestSync();
 
-        this.guiLeft = (this.width - TEXTURE_WIDTH) / 2;
-        this.guiTop = (this.height - TEXTURE_HEIGHT) / 2;
+        // 居中显示界面
+        this.guiLeft = (this.width - GUI_WIDTH) / 2;
+        this.guiTop = (this.height - GUI_HEIGHT) / 2;
 
-        // 添加属性按钮
-        int buttonY = guiTop + 30; // 调整起始Y坐标
-        for (Map.Entry<String, ModConfig.AttributeConfig> entry : Qwedshuxingmianban.CONFIG.attributes.entrySet()) {
-            String attributeId = entry.getKey();
+        // 计算最大滚动距离
+        int totalAttributes = Qwedshuxingmianban.CONFIG.attributes.size();
+        maxScroll = Math.max(0, totalAttributes - VISIBLE_ITEMS) * ITEM_HEIGHT;
 
-            ButtonWidget upgradeButton = ButtonWidget.builder(
-                            Text.literal("+"),
-                            button -> onAttributeUpgrade(attributeId))
-                    .dimensions(guiLeft + TEXTURE_WIDTH - 40, buttonY, 20, 20)
-                    .build();
+        // 更新属性按钮位置
+        updateButtonPositions();
 
-            this.addDrawableChild(upgradeButton);
-            upgradeButtons.put(attributeId, upgradeButton);
-
-            buttonY += 30; // 增加间距
-        }
-
-        // 添加重置按钮，移到底部中央
+        // 添加重置按钮
+        int resetButtonY = guiTop + GUI_HEIGHT - 30;
         this.addDrawableChild(ButtonWidget.builder(
                         Text.translatable("button.qwedshuxingmianban.reset"),
                         button -> showResetConfirmation())
-                .dimensions(guiLeft + (TEXTURE_WIDTH - 100) / 2, guiTop + TEXTURE_HEIGHT - 30, 100, 20)
+                .dimensions(
+                        guiLeft + (GUI_WIDTH - 100) / 2,
+                        resetButtonY,
+                        100,
+                        20)
                 .build());
 
         updateButtonStates();
+    }
+
+    private void updateButtonPositions() {
+        upgradeButtons.clear();
+        clearChildren();
+
+        int index = 0;
+        int visibleIndex = 0;
+
+        // 调整升级按钮位置，使其更靠近中线
+        int buttonX = guiLeft + GUI_WIDTH/2 + 80; // 将按钮移到更靠近中间的位置
+
+        for (Map.Entry<String, ModConfig.AttributeConfig> entry : Qwedshuxingmianban.CONFIG.attributes.entrySet()) {
+            String attributeId = entry.getKey();
+
+            if (index * ITEM_HEIGHT >= scrollPosition && visibleIndex < VISIBLE_ITEMS) {
+                int buttonY = guiTop + 40 + (visibleIndex * ITEM_HEIGHT);
+                ButtonWidget upgradeButton = ButtonWidget.builder(
+                                Text.literal("+"),
+                                button -> onAttributeUpgrade(attributeId))
+                        .dimensions(buttonX, buttonY - 2, 20, 20)
+                        .build();
+
+                this.addDrawableChild(upgradeButton);
+                upgradeButtons.put(attributeId, upgradeButton);
+                visibleIndex++;
+            }
+            index++;
+        }
+
+        // 重置按钮居中
+        addDrawableChild(ButtonWidget.builder(
+                        Text.translatable("button.qwedshuxingmianban.reset"),
+                        button -> showResetConfirmation())
+                .dimensions(
+                        guiLeft + (GUI_WIDTH - 100) / 2,
+                        guiTop + GUI_HEIGHT - 30,
+                        100,
+                        20)
+                .build());
     }
     private void requestSync() {
         long currentTime = System.currentTimeMillis();
@@ -90,54 +132,167 @@ public class AttributeScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context);
 
-        // 渲染背景纹理
-        context.drawTexture(TEXTURE, guiLeft, guiTop, 0, 0, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+        // 渲染纯白色背景
+        int backgroundColor = 0xFFFFFFFF; // 纯白色，带不透明度
+        context.fill(guiLeft, guiTop, guiLeft + GUI_WIDTH, guiTop + GUI_HEIGHT, backgroundColor);
+
+        // 可以添加一个深色边框
+        int borderColor = 0xFF808080; // 灰色边框
+        // 绘制边框
+        context.fill(guiLeft, guiTop, guiLeft + GUI_WIDTH, guiTop + 1, borderColor); // 上边框
+        context.fill(guiLeft, guiTop + GUI_HEIGHT - 1, guiLeft + GUI_WIDTH, guiTop + GUI_HEIGHT, borderColor); // 下边框
+        context.fill(guiLeft, guiTop, guiLeft + 1, guiTop + GUI_HEIGHT, borderColor); // 左边框
+        context.fill(guiLeft + GUI_WIDTH - 1, guiTop, guiLeft + GUI_WIDTH, guiTop + GUI_HEIGHT, borderColor); // 右边框
 
         // 渲染标题
-        context.drawCenteredTextWithShadow(this.textRenderer, this.title, this.width / 2, guiTop + 10, 0xFFFFFF);
+        context.drawText(this.textRenderer, this.title,
+                guiLeft + (GUI_WIDTH - textRenderer.getWidth(this.title)) / 2,
+                guiTop + 8,
+                0x000000, // 黑色文字
+                false);
 
-        // 渲染经验等级 - 移到顶部
+        // 渲染经验等级
         String expText = "当前经验等级: " + ClientAttributeData.getAvailableExperience();
-        context.drawTextWithShadow(this.textRenderer, Text.literal(expText),
-                guiLeft + 10, guiTop + 10, 0xFFFFFF);
+        context.drawText(this.textRenderer, expText,
+                guiLeft + (GUI_WIDTH - textRenderer.getWidth(expText)) / 2,
+                guiTop + 22,
+                0x000000,
+                false);
 
-        // 渲染属性信息
-        int textY = guiTop + 35; // 调整起始Y坐标
+        // 渲染属性列表
+        int attributesTop = guiTop + 40;
+        int index = 0;
+        int visibleIndex = 0;
+
+        // 计算左侧起始位置，使内容更居中
+        int leftColumnX = guiLeft + GUI_WIDTH/2 - 100;
+        int rightColumnX = guiLeft + GUI_WIDTH/2 + 10;
+
         for (Map.Entry<String, ModConfig.AttributeConfig> entry : Qwedshuxingmianban.CONFIG.attributes.entrySet()) {
-            String attributeId = entry.getKey();
-            ModConfig.AttributeConfig config = entry.getValue();
-            int currentLevel = ClientAttributeData.getAttributeLevel(attributeId);
+            if (index * ITEM_HEIGHT >= scrollPosition && visibleIndex < VISIBLE_ITEMS) {
+                String attributeId = entry.getKey();
+                ModConfig.AttributeConfig config = entry.getValue();
+                int currentLevel = ClientAttributeData.getAttributeLevel(attributeId);
 
-            // 渲染属性名称
-            context.drawTextWithShadow(this.textRenderer,
-                    Text.literal(config.displayName),
-                    guiLeft + 10, textY, 0xFFFFFF);
+                int textY = attributesTop + (visibleIndex * ITEM_HEIGHT);
 
-            // 渲染当前等级
-            Text levelText = Text.literal(String.format("等级: %d / %d", currentLevel, config.maxLevel));
-            context.drawTextWithShadow(this.textRenderer, levelText,
-                    guiLeft + 120, textY, currentLevel >= config.maxLevel ? 0xFFAA00 : 0xFFFFFF);
+                // 渲染属性名称
+                context.drawText(this.textRenderer,
+                        config.displayName,
+                        leftColumnX,
+                        textY,
+                        0x000000,
+                        false);
 
-            // 渲染具体属性值
-            double attributeValue = getAttributeValue(attributeId);
-            String valueFormat = attributeId.equals("movement_speed") ? "%.2f" : "%.1f";
-            Text valueText = Text.literal(String.format("当前值: " + valueFormat, attributeValue));
-            context.drawTextWithShadow(this.textRenderer, valueText,
-                    guiLeft + 10, textY + 12, 0x00FF00);
+                // 渲染当前等级
+                String levelText = String.format("等级: %d / %d", currentLevel, config.maxLevel);
+                context.drawText(this.textRenderer,
+                        levelText,
+                        rightColumnX,
+                        textY,
+                        currentLevel >= config.maxLevel ? 0x8B4513 : 0x000000,
+                        false);
 
-            // 渲染升级消耗
-            if (currentLevel < config.maxLevel) {
-                int cost = AttributeManager.calculateExperienceCost(attributeId, currentLevel);
-                Text costText = Text.literal(String.format("升级消耗: %d", cost))
-                        .formatted(ClientAttributeData.getAvailableExperience() >= cost ? Formatting.GREEN : Formatting.RED);
-                context.drawTextWithShadow(this.textRenderer, costText,
-                        guiLeft + 120, textY + 12, 0xFFFFFF);
+                // 渲染具体属性值
+                double attributeValue = getAttributeValue(attributeId);
+                String valueFormat = attributeId.equals("movement_speed") ? "%.2f" : "%.1f";
+                String valueText = String.format("当前值: " + valueFormat, attributeValue);
+                context.drawText(this.textRenderer,
+                        valueText,
+                        leftColumnX,
+                        textY + 12,
+                        0x000000,
+                        false);
+
+                // 渲染升级消耗
+                if (currentLevel < config.maxLevel) {
+                    int cost = AttributeManager.calculateExperienceCost(attributeId, currentLevel);
+                    int costColor = ClientAttributeData.getAvailableExperience() >= cost ?
+                            0x008000 : 0x800000; // 使用深绿色和深红色
+                    String costText = String.format("消耗: %d", cost);
+                    context.drawText(this.textRenderer,
+                            costText,
+                            rightColumnX,
+                            textY + 12,
+                            costColor,
+                            false);
+                }
+
+                visibleIndex++;
             }
+            index++;
+        }
 
-            textY += 30; // 增加间距
+        // 渲染滚动条（深色）
+        if (maxScroll > 0) {
+            int scrollbarHeight = VISIBLE_ITEMS * ITEM_HEIGHT;
+            int scrollbarX = guiLeft + GUI_WIDTH - SCROLLBAR_WIDTH - 8;
+            int scrollbarY = guiTop + 40;
+
+            // 滚动条背景
+            context.fill(scrollbarX, scrollbarY,
+                    scrollbarX + SCROLLBAR_WIDTH,
+                    scrollbarY + scrollbarHeight,
+                    0x20000000);
+
+            // 滚动条滑块
+            float scrollPercentage = scrollPosition / maxScroll;
+            int sliderHeight = Math.max(32, scrollbarHeight * VISIBLE_ITEMS /
+                    Qwedshuxingmianban.CONFIG.attributes.size());
+            int sliderY = scrollbarY + (int)((scrollbarHeight - sliderHeight) * scrollPercentage);
+
+            context.fill(scrollbarX, sliderY,
+                    scrollbarX + SCROLLBAR_WIDTH,
+                    sliderY + sliderHeight,
+                    0xFF808080);
         }
 
         super.render(context, mouseX, mouseY, delta);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        float scroll = (float) (amount * ITEM_HEIGHT);
+        scrollPosition = Math.max(0, Math.min(maxScroll, scrollPosition - scroll));
+        updateButtonPositions();
+        return true;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0 && isMouseOverScrollbar(mouseX, mouseY)) {
+            isDragging = true;
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            isDragging = false;
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (isDragging && button == 0) {
+            int scrollbarHeight = VISIBLE_ITEMS * ITEM_HEIGHT;
+            float dragPercentage = (float) (mouseY - (guiTop + 35)) / scrollbarHeight;
+            scrollPosition = Math.max(0, Math.min(maxScroll, maxScroll * dragPercentage));
+            updateButtonPositions();
+            return true;
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+
+    private boolean isMouseOverScrollbar(double mouseX, double mouseY) {
+        int scrollbarX = guiLeft + GUI_WIDTH - SCROLLBAR_WIDTH - 8;
+        int scrollbarY = guiTop + 40;
+        int scrollbarHeight = VISIBLE_ITEMS * ITEM_HEIGHT;
+        return mouseX >= scrollbarX && mouseX <= scrollbarX + SCROLLBAR_WIDTH &&
+                mouseY >= scrollbarY && mouseY <= scrollbarY + scrollbarHeight;
     }
     private double getAttributeValue(String attributeId) {
         if (this.client != null && this.client.player != null) {
@@ -203,7 +358,7 @@ public class AttributeScreen extends Screen {
     }
 
     @Override
-    public boolean shouldPause() {  // 改为 shouldPause
+    public boolean shouldPause() {
         return false;
     }
 }
