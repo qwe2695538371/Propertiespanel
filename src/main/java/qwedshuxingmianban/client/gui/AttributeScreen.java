@@ -4,8 +4,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
-import net.minecraft.entity.attribute.EntityAttribute;
-import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.text.Text;
 import qwedshuxingmianban.Qwedshuxingmianban;
@@ -35,8 +33,8 @@ public class AttributeScreen extends Screen {
     private long lastSyncRequest = 0;
     private static final long RETRY_DELAY = 1000; // 1秒重试延迟
     // 设置更大的界面尺寸，但保持原书本的宽高比
-    private static final int GUI_WIDTH = 256; 
-    private static final int GUI_HEIGHT = 256;
+    private static final int GUI_WIDTH = 256;
+    private static final int GUI_HEIGHT = 230;
 
 
     public AttributeScreen() {
@@ -122,8 +120,8 @@ public class AttributeScreen extends Screen {
         if (retryCount < MAX_RETRIES) {
             isLoading = true;
             lastSyncRequest = currentTime;
-            PacketByteBuf buf = PacketByteBufs.create();
-            ClientPlayNetworking.send(NetworkHandler.REQUEST_SYNC, buf);
+                PacketByteBuf buf = PacketByteBufs.create();
+                ClientPlayNetworking.send(NetworkHandler.REQUEST_SYNC, buf);
             retryCount++;
         }
     }
@@ -295,14 +293,8 @@ public class AttributeScreen extends Screen {
                 mouseY >= scrollbarY && mouseY <= scrollbarY + scrollbarHeight;
     }
     private double getAttributeValue(String attributeId) {
-        if (this.client != null && this.client.player != null) {
-            EntityAttribute attribute = AttributeManager.getAttributeById(attributeId);
-            EntityAttributeInstance attributeInstance = this.client.player.getAttributeInstance(attribute);
-            if (attributeInstance != null) {
-                return attributeInstance.getValue();
-            }
-        }
-        return 0.0;
+        // 直接从ClientAttributeData获取同步的值
+        return ClientAttributeData.getAttributeValue(attributeId);
     }
 
     private void onAttributeUpgrade(String attributeId) {

@@ -3,7 +3,6 @@ package qwedshuxingmianban.event;
 import net.fabricmc.fabric.api.entity.event.v1.ServerPlayerEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
-import qwedshuxingmianban.Qwedshuxingmianban;
 import qwedshuxingmianban.attribute.AttributeManager;
 import qwedshuxingmianban.data.PlayerAttributeData;
 import qwedshuxingmianban.data.PlayerDataManager;
@@ -29,7 +28,6 @@ public class PlayerEventHandler {
         // 监听玩家退出事件
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
             ServerPlayerEntity player = handler.getPlayer();
-            Qwedshuxingmianban.LOGGER.info("Player disconnecting: " + player.getUuid());
             PlayerDataManager.saveData(player);
         });
     }

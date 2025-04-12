@@ -27,13 +27,11 @@ public class Qwedshuxingmianban implements ModInitializer {
 		// 注册玩家加入事件
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
 			ServerPlayerEntity player = handler.getPlayer();
-			Qwedshuxingmianban.LOGGER.info("Player joining: " + player.getUuid());
 			PlayerDataManager.getData(player); // 确保加载数据
 		});
 
 		// 注册服务器停止事件
 		ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-			Qwedshuxingmianban.LOGGER.info("Server stopping, saving all player data...");
 			for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
 				PlayerDataManager.saveData(player);
 			}
@@ -49,7 +47,6 @@ public class Qwedshuxingmianban implements ModInitializer {
 
 		// 注册其他事件处理器
 		PlayerEventHandler.init();
-
 		LOGGER.info("属性面板模组已启动！");
 	}
 }

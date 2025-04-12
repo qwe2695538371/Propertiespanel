@@ -5,29 +5,32 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.server.network.ServerPlayerEntity;
 import qwedshuxingmianban.Qwedshuxingmianban;
 import qwedshuxingmianban.config.ModConfig;
+import qwedshuxingmianban.network.NetworkHandler;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class AttributeManager {
-    private static final Map<String, EntityAttribute> ATTRIBUTES = new HashMap<>();
+    // 改为 public static final
+    public static final Map<String, EntityAttribute> ATTRIBUTES = new HashMap<>();
     private static final Map<String, UUID> MODIFIER_UUIDS = new HashMap<>();
 
     static {
-        // 初始化属性映射
-        ATTRIBUTES.put("max_health", EntityAttributes.GENERIC_MAX_HEALTH);
-        ATTRIBUTES.put("armor", EntityAttributes.GENERIC_ARMOR);
-        ATTRIBUTES.put("armor_toughness", EntityAttributes.GENERIC_ARMOR_TOUGHNESS);
-        ATTRIBUTES.put("attack_damage", EntityAttributes.GENERIC_ATTACK_DAMAGE);
-        ATTRIBUTES.put("attack_speed", EntityAttributes.GENERIC_ATTACK_SPEED);
-        ATTRIBUTES.put("movement_speed", EntityAttributes.GENERIC_MOVEMENT_SPEED);
-        ATTRIBUTES.put("knockback_resistance", EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE);
-        ATTRIBUTES.put("luck", EntityAttributes.GENERIC_LUCK);
+        // 验证属性映射是否正确
+        ATTRIBUTES.put("max_health", EntityAttributes.GENERIC_MAX_HEALTH);           // 生命值
+        ATTRIBUTES.put("armor", EntityAttributes.GENERIC_ARMOR);                     // 护甲值
+        ATTRIBUTES.put("armor_toughness", EntityAttributes.GENERIC_ARMOR_TOUGHNESS); // 护甲韧性
+        ATTRIBUTES.put("attack_damage", EntityAttributes.GENERIC_ATTACK_DAMAGE);     // 攻击伤害
+        ATTRIBUTES.put("attack_speed", EntityAttributes.GENERIC_ATTACK_SPEED);       // 攻击速度
+        ATTRIBUTES.put("movement_speed", EntityAttributes.GENERIC_MOVEMENT_SPEED);   // 移动速度
+        ATTRIBUTES.put("knockback_resistance", EntityAttributes.GENERIC_KNOCKBACK_RESISTANCE); // 击退抗性
+        ATTRIBUTES.put("luck", EntityAttributes.GENERIC_LUCK);                       // 幸运
 
-        // 为每个属性生成唯一的UUID
+        // 生成唯一的UUID
         for (String attr : ATTRIBUTES.keySet()) {
             MODIFIER_UUIDS.put(attr, UUID.nameUUIDFromBytes(("qwedshuxingmianban:" + attr).getBytes()));
         }
@@ -41,10 +44,8 @@ public class AttributeManager {
         if (instance == null) return;
 
         // 移除旧的修改器
-        EntityAttributeModifier oldModifier = instance.getModifier(MODIFIER_UUIDS.get(attributeId));
-        if (oldModifier != null) {
-            instance.removeModifier(MODIFIER_UUIDS.get(attributeId));
-        }
+        UUID modifierId = MODIFIER_UUIDS.get(attributeId);
+        instance.removeModifier(modifierId);
 
         // 计算新的属性值
         ModConfig.AttributeConfig config = Qwedshuxingmianban.CONFIG.attributes.get(attributeId);
@@ -52,12 +53,29 @@ public class AttributeManager {
 
         // 添加新的修改器
         EntityAttributeModifier modifier = new EntityAttributeModifier(
-                MODIFIER_UUIDS.get(attributeId),
+                modifierId,
                 "属性面板加成",
                 value,
-                EntityAttributeModifier.Operation.ADDITION
+                getOperationForAttribute(attributeId)
         );
         instance.addPersistentModifier(modifier);
+
+        // 如果在服务器端，强制同步属性
+        if (!player.getWorld().isClient() && player instanceof ServerPlayerEntity) {
+            ServerPlayerEntity serverPlayer = (ServerPlayerEntity) player;
+            // 同步属性修改到客户端
+            NetworkHandler.sendAttributeSync(serverPlayer);
+
+            // 添加调试日志
+            Qwedshuxingmianban.LOGGER.info("属性 {} 已修改，等级: {}, 值: {}",
+                    attributeId, level, player.getAttributeValue(attribute));
+        }
+    }
+    private static EntityAttributeModifier.Operation getOperationForAttribute(String attributeId) {
+        if ("attack_damage".equals(attributeId)) {
+            return EntityAttributeModifier.Operation.MULTIPLY_BASE;
+        }
+        return EntityAttributeModifier.Operation.ADDITION;
     }
 
     public static int calculateExperienceCost(String attributeId, int currentLevel) {
@@ -104,4 +122,5 @@ public class AttributeManager {
             }
         }
     }
+
 }

@@ -1,7 +1,6 @@
 package qwedshuxingmianban.data;
 
 import net.minecraft.server.network.ServerPlayerEntity;
-import qwedshuxingmianban.Qwedshuxingmianban;
 import qwedshuxingmianban.attribute.AttributeManager;
 
 import java.util.HashMap;
@@ -31,7 +30,6 @@ public class PlayerDataManager {
             }
 
             CACHE.put(uuid, data);
-            Qwedshuxingmianban.LOGGER.info("Loaded data for player: " + uuid + ", attributes: " + attributes);
         }
 
         return data;
@@ -44,7 +42,6 @@ public class PlayerDataManager {
             ModSavedData savedData = ModSavedData.getOrCreate(player.getServerWorld());
             savedData.setPlayerData(uuid, data.getAllLevels());
             data.resetChanged();  // 重置变化标记
-            Qwedshuxingmianban.LOGGER.info("Saved data for player: " + uuid + ", attributes: " + data.getAllLevels());
         }
     }
 

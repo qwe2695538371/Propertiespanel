@@ -1,7 +1,5 @@
 package qwedshuxingmianban.network;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.Identifier;
@@ -13,6 +11,7 @@ import qwedshuxingmianban.data.PlayerDataManager;
 import net.minecraft.network.PacketByteBuf;
 import qwedshuxingmianban.network.packet.AttributeDataPacket;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class NetworkHandler {
@@ -46,8 +45,6 @@ public class NetworkHandler {
         // 处理客户端请求同步的消息
         ServerPlayNetworking.registerGlobalReceiver(REQUEST_SYNC, (server, player, handler, buf, responseSender) -> {
             server.execute(() -> {
-                Qwedshuxingmianban.LOGGER.info("[NetworkHandler] Received sync request from: " +
-                        player.getName().getString());
                 sendAttributeSync(player);
             });
         });
@@ -93,11 +90,21 @@ public class NetworkHandler {
             ModSavedData savedData = ModSavedData.getOrCreate(player.getServerWorld());
             Map<String, Integer> levels = savedData.getPlayerData(player.getUuid());
 
-            Qwedshuxingmianban.LOGGER.info("[NetworkHandler] Sending sync data to client. Player: " +
-                    player.getName().getString() + ", Data: " + levels);
+            // 收集所有属性的当前值，不管是否有加点
+            Map<String, Double> attributeValues = new HashMap<>();
+
+            // 遍历所有已注册的属性，而不是只遍历已加点的属性
+            AttributeManager.ATTRIBUTES.forEach((attributeId, attribute) -> {
+                if (attribute != null) {
+                    double value = player.getAttributeValue(attribute);
+                    attributeValues.put(attributeId, value);
+                    Qwedshuxingmianban.LOGGER.info("同步属性 {} - 等级: {}, 当前值: {}",
+                            attributeId, levels.getOrDefault(attributeId, 0), value);
+                }
+            });
 
             // 发送到客户端
-            PacketByteBuf buf = AttributeDataPacket.write(levels, player.experienceLevel);
+            PacketByteBuf buf = AttributeDataPacket.write(levels, player.experienceLevel, attributeValues);
             ServerPlayNetworking.send(player, SYNC_ATTRIBUTES, buf);
         } catch (Exception e) {
             Qwedshuxingmianban.LOGGER.error("[NetworkHandler] Failed to sync attributes", e);

@@ -27,8 +27,6 @@ public class ModSavedData extends PersistentState {
             }
 
             playersNbt.put(entry.getKey().toString(), playerData);
-            Qwedshuxingmianban.LOGGER.info("Saving data for player: " + entry.getKey() +
-                    ", attributes: " + attributes);
         }
 
         nbt.put("PlayerAttributes", playersNbt);
@@ -52,10 +50,8 @@ public class ModSavedData extends PersistentState {
                     }
 
                     data.playerAttributes.put(uuid, attributes);
-                    Qwedshuxingmianban.LOGGER.info("Loaded data for player: " + uuid +
-                            ", attributes: " + attributes);
-                } catch (Exception e) {
-                    Qwedshuxingmianban.LOGGER.error("Failed to load data for UUID: " + uuidStr, e);
+                } catch (Exception ignored) {
+
                 }
             }
         } else {

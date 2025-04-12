@@ -30,7 +30,7 @@ public class ModConfig {
 
     public static class GeneralConfig {
         public boolean allowReset = true;
-        public double resetCostPercentage = 30.0; // 30% 损耗
+        public double resetCostPercentage = 30.0;
         public int attributePriority = 800;
     }
 
@@ -48,22 +48,28 @@ public class ModConfig {
     private static ModConfig createDefault() {
         ModConfig config = new ModConfig();
 
-        // 设置默认属性配置
-        String[][] defaultAttributes = {
-                {"max_health", "最大生命值"},
-                {"armor", "护甲值"},
-                {"armor_toughness", "盔甲韧性"},
-                {"attack_damage", "攻击伤害"},
-                {"attack_speed", "攻击速度"},
-                {"movement_speed", "移动速度"},
-                {"knockback_resistance", "击退抗性"},
-                {"luck", "幸运"}
+        // 定义默认属性配置
+        Object[][] defaultAttributes = {
+                {"max_health", "最大生命值", 1.0},
+                {"armor", "护甲值", 1.0},
+                {"armor_toughness", "盔甲韧性", 1.0},
+                {"attack_damage", "攻击伤害", 0.1},
+                {"attack_speed", "攻击速度", 0.2},
+                {"movement_speed", "移动速度", 0.002},
+                {"knockback_resistance", "击退抗性", 0.05},
+                {"luck", "幸运", 0.1}
         };
 
-        for (String[] attr : defaultAttributes) {
+        // 创建每个属性的配置
+        for (Object[] attr : defaultAttributes) {
             AttributeConfig attrConfig = new AttributeConfig();
-            attrConfig.displayName = attr[1];
-            config.attributes.put(attr[0], attrConfig);
+            attrConfig.displayName = (String) attr[1];
+            attrConfig.valuePerLevel = (Double) attr[2];
+            // 其他值保持默认
+            // baseExperienceCost = 5
+            // experienceIncrement = 2
+            // maxLevel = 20
+            config.attributes.put((String) attr[0], attrConfig);
         }
 
         // 保存默认配置

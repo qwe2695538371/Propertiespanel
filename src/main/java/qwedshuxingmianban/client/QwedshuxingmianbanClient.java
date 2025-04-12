@@ -27,7 +27,11 @@ public class QwedshuxingmianbanClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(NetworkHandler.SYNC_ATTRIBUTES, (client, handler, buf, responseSender) -> {
             AttributeDataPacket packet = AttributeDataPacket.read(buf);
             client.execute(() -> {
-                ClientAttributeData.updateData(packet.getLevels(), packet.getAvailableExperience());
+                ClientAttributeData.updateData(
+                        packet.getLevels(),
+                        packet.getAvailableExperience(),
+                        packet.getAttributeValues()
+                );
                 if (client.currentScreen instanceof AttributeScreen) {
                     ((AttributeScreen) client.currentScreen).refreshData();
                 }
