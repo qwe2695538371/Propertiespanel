@@ -1,0 +1,14 @@
+{
+  "key.qwedshuxingmianban.open_panel": "打开属性面板",
+  "category.qwedshuxingmianban.general": "属性面板",
+
+  "screen.qwedshuxingmianban.attribute_panel": "属性面板",
+  "screen.qwedshuxingmianban.reset_confirm.title": "确认重置",
+  "screen.qwedshuxingmianban.reset_confirm.message": "确定要重置所有属性点吗？\n将返还70%的经验值。",
+
+  "button.qwedshuxingmianban.reset": "重置属性",
+
+  "attribute.qwedshuxingmianban.cost": "升级消耗：%d级经验",
+  "attribute.qwedshuxingmianban.max_level": "已达到最大等级",
+  "attribute.qwedshuxingmianban.insufficient_exp": "经验不足"
+}
