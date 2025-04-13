@@ -1,0 +1,28 @@
+{
+  "gui.qwedshuxingmianban.title": "Attribute Panel",
+  "gui.qwedshuxingmianban.experience_level": "Current Experience Level: %d",
+  "gui.qwedshuxingmianban.level": "Level: %d / %d",
+  "gui.qwedshuxingmianban.current_value": "Current Value: %s",
+  "gui.qwedshuxingmianban.upgrade_cost": "Cost: %d",
+  "screen.qwedshuxingmianban.reset_confirm.title": "Reset Confirmation",
+  "screen.qwedshuxingmianban.reset_confirm.message": "Are you sure you want to reset all the attribute points? This will return some of the experience points that have been used.",
+
+  "attribute.qwedshuxingmianban.movement_speed": "Movement Speed",
+  "attribute.qwedshuxingmianban.max_health": "Maximum Health",
+  "attribute.qwedshuxingmianban.attack_damage": "Attack Damage",
+  "attribute.qwedshuxingmianban.defense": "Defense",
+  "attribute.qwedshuxingmianban.armor": "armor",
+  "attribute.qwedshuxingmianban.armor_toughness": "armorToughness",
+  "attribute.qwedshuxingmianban.attack_speed": "attackSpeed",
+  "attribute.qwedshuxingmianban.knockback_resistance": "knockbackResistance",
+  "attribute.qwedshuxingmianban.luck": "luck",
+
+  "button.qwedshuxingmianban.reset": "Reset Points",
+  "button.qwedshuxingmianban.confirm": "Confirm",
+  "button.qwedshuxingmianban.cancel": "Cancel",
+
+  "tooltip.qwedshuxingmianban.max_level": "Maximum Level Reached",
+  "tooltip.qwedshuxingmianban.insufficient_exp": "Insufficient Experience",
+  "tooltip.qwedshuxingmianban.click_to_upgrade": "Click to Upgrade",
+  "tooltip.qwedshuxingmianban.reset_warning": "Warning: This will reset all attribute points!"
+}

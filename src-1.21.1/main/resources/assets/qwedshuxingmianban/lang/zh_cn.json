@@ -1,0 +1,27 @@
+{
+  "gui.qwedshuxingmianban.title": "属性面板",
+  "gui.qwedshuxingmianban.experience_level": "当前经验等级：%d",
+  "gui.qwedshuxingmianban.level": "等级：%d / %d",
+  "gui.qwedshuxingmianban.current_value": "当前值：%s",
+  "gui.qwedshuxingmianban.upgrade_cost": "消耗：%d",
+  "screen.qwedshuxingmianban.reset_confirm.title": "重置确认",
+  "screen.qwedshuxingmianban.reset_confirm.message": "确定要重置所有属性点吗？这将返还部分已使用的经验值。",
+
+  "attribute.qwedshuxingmianban.movement_speed": "移动速度",
+  "attribute.qwedshuxingmianban.max_health": "最大生命值",
+  "attribute.qwedshuxingmianban.attack_damage": "攻击伤害",
+  "attribute.qwedshuxingmianban.armor": "护甲值",
+  "attribute.qwedshuxingmianban.armor_toughness": "盔甲韧性",
+  "attribute.qwedshuxingmianban.attack_speed": "攻击速度",
+  "attribute.qwedshuxingmianban.knockback_resistance": "击退抗性",
+  "attribute.qwedshuxingmianban.luck": "幸运值",
+
+  "button.qwedshuxingmianban.reset": "重置属性点",
+  "button.qwedshuxingmianban.confirm": "确认",
+  "button.qwedshuxingmianban.cancel": "取消",
+
+  "tooltip.qwedshuxingmianban.max_level": "已达到最高等级",
+  "tooltip.qwedshuxingmianban.insufficient_exp": "经验不足",
+  "tooltip.qwedshuxingmianban.click_to_upgrade": "点击升级",
+  "tooltip.qwedshuxingmianban.reset_warning": "警告：这将重置所有属性点！"
+}
